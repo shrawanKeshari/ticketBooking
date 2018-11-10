@@ -14,15 +14,10 @@ public class TicketBookingScreenRequest {
 		this.request = request;
 	}
 
-	public TicketBookingScreenRequest withRequest(Request request) {
-		this.request = request;
-		return this;
-	}
-
 	public static class Request {
 
 		private String name;
-		private SeatInfo seatInfo = null;
+		private List<SeatInfo> seatInfo = null;
 
 		public String getName() {
 			return name;
@@ -32,22 +27,12 @@ public class TicketBookingScreenRequest {
 			this.name = name;
 		}
 
-		public Request withName(String name) {
-			this.name = name;
-			return this;
-		}
-
-		public SeatInfo getSeatInfo() {
+		public List<SeatInfo> getSeatInfo() {
 			return seatInfo;
 		}
 
-		public void setSeatInfo(SeatInfo seatInfo) {
+		public void setSeatInfo(List<SeatInfo> seatInfo) {
 			this.seatInfo = seatInfo;
-		}
-
-		public Request withSeatInfo(SeatInfo seatInfo) {
-			this.seatInfo = seatInfo;
-			return this;
 		}
 
 		public static class SeatInfo {
@@ -64,11 +49,6 @@ public class TicketBookingScreenRequest {
 				this.row = row;
 			}
 
-			public SeatInfo withRow(String row) {
-				this.row = row;
-				return this;
-			}
-
 			public Integer getNumberOfSeats() {
 				return numberOfSeats;
 			}
@@ -77,22 +57,12 @@ public class TicketBookingScreenRequest {
 				this.numberOfSeats = numberOfSeats;
 			}
 
-			public SeatInfo withNumberOfSeats(Integer numberOfSeats) {
-				this.numberOfSeats = numberOfSeats;
-				return this;
-			}
-
 			public List<Integer> getAisleSeats() {
 				return aisleSeats;
 			}
 
 			public void setAisleSeats(List<Integer> aisleSeats) {
 				this.aisleSeats = aisleSeats;
-			}
-
-			public SeatInfo withAisleSeats(List<Integer> aisleSeats) {
-				this.aisleSeats = aisleSeats;
-				return this;
 			}
 
 		}

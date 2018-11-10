@@ -1,6 +1,13 @@
 package com.api.ticketBooking.pojo;
 
-public class TicketBookingScreenResponse {
+import java.io.Serializable;
+
+public class TicketBookingScreenResponse implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7574267704293452702L;
 
 	private String status;
 	private String statusCode;
