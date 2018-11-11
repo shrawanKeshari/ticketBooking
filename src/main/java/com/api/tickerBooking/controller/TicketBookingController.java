@@ -3,6 +3,7 @@ package com.api.tickerBooking.controller;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,10 +22,10 @@ import com.google.gson.Gson;
 @Controller
 @RequestMapping(value = "/")
 public class TicketBookingController {
-	
+
 	@Autowired
 	TicketBookingDao ticketBookingDao;
-	
+
 	@Autowired
 	SeatInfoDao seatInfoDao;
 
@@ -33,20 +34,27 @@ public class TicketBookingController {
 	private static final String FAILURE_STATUS = "FAILURE";
 	private static final String FAILURE_CODE = "FAILURE";
 
+	private static final Logger LOGGER = Logger.getLogger(TicketBookingController.class);
+
 	@RequestMapping(value = "/screens", method = RequestMethod.POST)
 	public @ResponseBody TicketBookingScreenResponse screenDetail(
 			@RequestBody TicketBookingScreenRequest ticketBookingScreenRequest) {
+
+		LOGGER.info("Into the screeDetails controller method");
+
 		TicketBookingScreenResponse ticketBookingScreenResponse = new TicketBookingScreenResponse();
 
 		String screen_name = ticketBookingScreenRequest.getRequest().getName();
 		List<com.api.ticketBooking.pojo.TicketBookingScreenRequest.Request.SeatInfo> seatInfoList = ticketBookingScreenRequest
 				.getRequest().getSeatInfo();
 
-		System.out.println(screen_name);
+		LOGGER.info("screen name : " + screen_name);
 
 		int len = seatInfoList.size();
-		
+
 		List<String> rowList = new ArrayList<String>();
+
+		boolean secondCommit = true;
 
 		for (int i = 0; i < len; i++) {
 			com.api.ticketBooking.pojo.TicketBookingScreenRequest.Request.SeatInfo seatInfo = seatInfoList.get(i);
@@ -55,37 +63,50 @@ public class TicketBookingController {
 			List<Integer> aislesSeats = seatInfo.getAisleSeats();
 			rowList.add(currentRow);
 			String aislesJson = new Gson().toJson(aislesSeats);
-			
+
 			try {
+
 				SeatInfo seatInfo2 = new SeatInfo();
 				seatInfo2.setRow(currentRow);
 				seatInfo2.setAisleSeats(aislesJson);
 				seatInfo2.setNo_of_seats(no_of_seats);
-				
+
 				seatInfoDao.insertData(seatInfo2);
-			}catch (Exception e) {
+			} catch (Exception e) {
+				secondCommit = false;
 				e.printStackTrace();
+				LOGGER.error("error while inserting data into seatInfo table, exception is " + e.getMessage());
 			}
-			
-			
-			System.out.println(currentRow + " " + no_of_seats + " " + aislesJson);
+
+			LOGGER.info("current row : " + currentRow + ", no of seats : " + no_of_seats + ", aisles seats json : "
+					+ aislesJson);
 		}
-		
-		String seatInfoJson = new Gson().toJson(rowList);
-		
-		try {
-			
-			TicketBooking ticketBooking = new TicketBooking();
-			ticketBooking.setScreen_name(screen_name);
-			ticketBooking.setSeatInfo(seatInfoJson);
-			
-			ticketBookingDao.insertData(ticketBooking);
-			
-			ticketBookingScreenResponse.setStatus(SUCCESS_STATUS);
-			ticketBookingScreenResponse.setStatusCode(SUCCES_CODE);
-		}catch (Exception e) {
+
+		if (secondCommit) {
+			String seatInfoJson = new Gson().toJson(rowList);
+
+			try {
+
+				TicketBooking ticketBooking = new TicketBooking();
+				ticketBooking.setScreen_name(screen_name);
+				ticketBooking.setSeatInfo(seatInfoJson);
+
+				ticketBookingDao.insertData(ticketBooking);
+
+				ticketBookingScreenResponse.setStatus(SUCCESS_STATUS);
+				ticketBookingScreenResponse.setStatusCode(SUCCES_CODE);
+			} catch (Exception e) {
+				ticketBookingScreenResponse.setStatus(FAILURE_STATUS);
+				ticketBookingScreenResponse.setStatusCode(FAILURE_CODE);
+
+				LOGGER.error("error while inserting data into ticketBooking table, exception is " + e.getMessage());
+
+			}
+		}else {
 			ticketBookingScreenResponse.setStatus(FAILURE_STATUS);
 			ticketBookingScreenResponse.setStatusCode(FAILURE_CODE);
+			
+			LOGGER.error("error occured while inserting data into seatInfo table");
 		}
 
 		return ticketBookingScreenResponse;
