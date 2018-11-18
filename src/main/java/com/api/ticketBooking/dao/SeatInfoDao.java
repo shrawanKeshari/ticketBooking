@@ -12,7 +12,7 @@ import com.api.ticketBooking.beans.SeatInfo;
 public class SeatInfoDao {
 
 	JdbcTemplate template;
-	
+
 	private static final Logger LOGGER = Logger.getLogger(SeatInfoDao.class);
 
 	public void setTemplate(JdbcTemplate template) {
@@ -20,10 +20,11 @@ public class SeatInfoDao {
 	}
 
 	public int insertData(SeatInfo seatInfo) {
-		
+
 		String sql = "insert into seatInfo values (null,?,?,?)";
-		
-		LOGGER.info("sql query is : " + sql);
+
+		LOGGER.info("sql query is : " + sql + " , " + seatInfo.getRow() + " " + seatInfo.getAisleSeats() + " "
+				+ seatInfo.getNo_of_seats());
 
 		return template.update(sql, seatInfo.getRow(), seatInfo.getAisleSeats(), seatInfo.getNo_of_seats());
 	}
@@ -31,16 +32,17 @@ public class SeatInfoDao {
 	public int updateData(SeatInfo seatInfo) {
 		String sql = "update seatInfo set aisleSeats=?,no_of_seats=? where row=?";
 
-		LOGGER.info("sql query is : " + sql);
-		
+		LOGGER.info("sql query is : " + sql + " , " + seatInfo.getAisleSeats() + " " + seatInfo.getNo_of_seats() + " "
+				+ seatInfo.getRow());
+
 		return template.update(sql, seatInfo.getAisleSeats(), seatInfo.getNo_of_seats(), seatInfo.getRow());
 	}
 
 	public List<SeatInfo> getEntriesByRows(String row) {
-		String sql = "select * from seatInfo where row in ("+ row +")";
-		
-		LOGGER.info("sql query is : " + sql);
-		
+		String sql = "select * from seatInfo where row in (" + row + ")";
+
+		LOGGER.info("sql query is : " + sql + " , " + row);
+
 		return template.query(sql, new RowMapper<SeatInfo>() {
 
 			public SeatInfo mapRow(ResultSet rs, int row) throws SQLException {

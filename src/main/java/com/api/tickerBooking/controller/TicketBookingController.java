@@ -1,26 +1,34 @@
 package com.api.tickerBooking.controller;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.api.ticketBooking.beans.ReserveSeat;
 import com.api.ticketBooking.beans.SeatInfo;
 import com.api.ticketBooking.beans.TicketBooking;
+import com.api.ticketBooking.dao.ReserveSeatDao;
 import com.api.ticketBooking.dao.SeatInfoDao;
 import com.api.ticketBooking.dao.TicketBookingDao;
+import com.api.ticketBooking.pojo.ReserveRequest;
+import com.api.ticketBooking.pojo.ReserveRequest.Request.Seat;
 import com.api.ticketBooking.pojo.TicketBookingScreenRequest;
 import com.api.ticketBooking.pojo.TicketBookingScreenResponse;
 import com.google.gson.Gson;
 
 @Controller
-@RequestMapping(value = "/")
+@RequestMapping(value = "/screens")
 public class TicketBookingController {
 
 	@Autowired
@@ -28,6 +36,9 @@ public class TicketBookingController {
 
 	@Autowired
 	SeatInfoDao seatInfoDao;
+
+	@Autowired
+	ReserveSeatDao reserveSeatDao;
 
 	private static final String SUCCESS_STATUS = "SUCCESS";
 	private static final String SUCCES_CODE = "SUCCESS";
@@ -56,6 +67,8 @@ public class TicketBookingController {
 
 		boolean secondCommit = true;
 
+		JSONObject availableSeatJsonObject = new JSONObject();
+
 		for (int i = 0; i < len; i++) {
 			com.api.ticketBooking.pojo.TicketBookingScreenRequest.Request.SeatInfo seatInfo = seatInfoList.get(i);
 			String currentRow = seatInfo.getRow();
@@ -72,6 +85,9 @@ public class TicketBookingController {
 				seatInfo2.setNo_of_seats(no_of_seats);
 
 				seatInfoDao.insertData(seatInfo2);
+
+				constructJsonObjectForSeats(availableSeatJsonObject, currentRow, no_of_seats);
+
 			} catch (Exception e) {
 				secondCommit = false;
 				e.printStackTrace();
@@ -93,6 +109,12 @@ public class TicketBookingController {
 
 				ticketBookingDao.insertData(ticketBooking);
 
+				ReserveSeat reserveSeat = new ReserveSeat();
+				reserveSeat.setScreen_name(screen_name);
+				reserveSeat.setAvailable_seats(availableSeatJsonObject.toString());
+
+				reserveSeatDao.insertData(reserveSeat);
+
 				ticketBookingScreenResponse.setStatus(SUCCESS_STATUS);
 				ticketBookingScreenResponse.setStatusCode(SUCCES_CODE);
 			} catch (Exception e) {
@@ -102,11 +124,71 @@ public class TicketBookingController {
 				LOGGER.error("error while inserting data into ticketBooking table, exception is " + e.getMessage());
 
 			}
-		}else {
+		} else {
 			ticketBookingScreenResponse.setStatus(FAILURE_STATUS);
 			ticketBookingScreenResponse.setStatusCode(FAILURE_CODE);
-			
+
 			LOGGER.error("error occured while inserting data into seatInfo table");
+		}
+
+		return ticketBookingScreenResponse;
+	}
+
+	private void constructJsonObjectForSeats(JSONObject availableSeatJsonObject, String currentRow, int no_of_seats) {
+		boolean[] availSeatArray = new boolean[no_of_seats];
+		Arrays.fill(availSeatArray, false);
+		JSONArray jsonArray = new JSONArray(availSeatArray);
+		availableSeatJsonObject.put(currentRow, jsonArray);
+	}
+
+	@RequestMapping(value = "/{screen_name}/reserve", method = RequestMethod.POST)
+	public @ResponseBody TicketBookingScreenResponse reserve(@PathVariable String screen_name,
+			@RequestBody ReserveRequest reserveRequest) {
+		TicketBookingScreenResponse ticketBookingScreenResponse = new TicketBookingScreenResponse();
+
+		List<Seat> seats = reserveRequest.getRequest().getSeats();
+
+		int seatsLength = seats.size();
+
+		try {
+
+			ReserveSeat reserveSeat = reserveSeatDao.getAvailableSeats(screen_name);
+
+			JSONObject jsonObject = new JSONObject(reserveSeat.getAvailable_seats());
+
+			LOGGER.info("Json Object before reserving the seat is :" + jsonObject.toString());
+
+			for (int i = 0; i < seatsLength; i++) {
+				Seat seat = seats.get(i);
+				String currentRow = seat.getRow();
+				List<Integer> seatsList = seat.getSeatList();
+				int seatLength = seatsList.size();
+
+				JSONArray jsonArray = jsonObject.getJSONArray(currentRow);
+
+				for (int j = 0; j < seatLength; j++) {
+					int currIndex = seatsList.get(j);
+					jsonArray.put(currIndex, true);
+				}
+
+				LOGGER.info("Json Array is :" + jsonArray.toString());
+			}
+			
+			LOGGER.info("Json Object after reserving the seat is :" + jsonObject.toString());
+			
+			reserveSeat.setScreen_name(screen_name);
+			reserveSeat.setAvailable_seats(jsonObject.toString());
+			
+			LOGGER.info("screen name for reserve request: " + reserveSeat.getScreen_name());
+			LOGGER.info("avialable sest for reserve request: " + reserveSeat.getAvailable_seats());
+			
+			reserveSeatDao.updateData(reserveSeat);
+
+			ticketBookingScreenResponse.setStatus(SUCCESS_STATUS);
+			ticketBookingScreenResponse.setStatusCode(SUCCES_CODE);
+		} catch (Exception e) {
+			ticketBookingScreenResponse.setStatus(FAILURE_STATUS);
+			ticketBookingScreenResponse.setStatusCode(FAILURE_CODE);
 		}
 
 		return ticketBookingScreenResponse;
