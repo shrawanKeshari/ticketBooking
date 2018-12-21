@@ -34,10 +34,6 @@
 		<property name="template" ref="jt"></property>
 	</bean>
 	
-	<bean id="reserveDao" class="com.api.ticketBooking.dao.ReserveSeatDao">
-		<property name="template" ref="jt"></property>
-	</bean>
-	
 	<mvc:annotation-driven />
 
 </beans>
