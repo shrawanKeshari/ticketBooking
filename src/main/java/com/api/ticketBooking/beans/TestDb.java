@@ -1,6 +1,6 @@
 package com.api.ticketBooking.beans;
 
-public class TicketBooking {
+public class TestDb {
 
 	private int id;
 	private String screen_name;
@@ -38,4 +38,5 @@ public class TicketBooking {
 	public void setAvailable_seats(String available_seats) {
 		this.available_seats = available_seats;
 	}
+
 }
