@@ -181,6 +181,7 @@ public class TicketBookingController {
 		} catch (Exception e) {
 			ticketBookingScreenResponse.setStatus(FAILURE_STATUS);
 			ticketBookingScreenResponse.setStatusCode(FAILURE_CODE);
+			LOGGER.error(e.getMessage());
 		}
 
 		return ticketBookingScreenResponse;
