@@ -1,6 +1,7 @@
 package com.api.ticketBooking.pojo;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class TicketBookingScreenResponse implements Serializable {
 
@@ -38,6 +39,38 @@ public class TicketBookingScreenResponse implements Serializable {
 	}
 
 	public static class Response {
+
+		private List<SeatResponse> seats = null;
+
+		public List<SeatResponse> getSeats() {
+			return seats;
+		}
+
+		public void setSeats(List<SeatResponse> seats) {
+			this.seats = seats;
+		}
+
+		public static class SeatResponse {
+
+			private String row;
+			private List<Integer> seatsInfo = null;
+
+			public String getRow() {
+				return row;
+			}
+
+			public void setRow(String row) {
+				this.row = row;
+			}
+
+			public List<Integer> getSeatsInfo() {
+				return seatsInfo;
+			}
+
+			public void setSeatsInfo(List<Integer> seatsInfo) {
+				this.seatsInfo = seatsInfo;
+			}
+		}
 
 	}
 

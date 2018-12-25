@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.api.ticketBooking.beans.SeatInfo;
@@ -23,6 +24,8 @@ import com.api.ticketBooking.pojo.ReserveRequest;
 import com.api.ticketBooking.pojo.ReserveRequest.Request.Seat;
 import com.api.ticketBooking.pojo.TicketBookingScreenRequest;
 import com.api.ticketBooking.pojo.TicketBookingScreenResponse;
+import com.api.ticketBooking.pojo.TicketBookingScreenResponse.Response;
+import com.api.ticketBooking.pojo.TicketBookingScreenResponse.Response.SeatResponse;
 import com.google.gson.Gson;
 
 @Controller
@@ -92,21 +95,21 @@ public class TicketBookingController {
 			LOGGER.info("current row : " + currentRow + ", no of seats : " + no_of_seats + ", aisles seats json : "
 					+ aislesJson);
 		}
-		
+
 		LOGGER.info("secondCommit : " + secondCommit);
 
 		if (secondCommit) {
 			String seatInfoJson = new Gson().toJson(rowList);
 
 			try {
-				
+
 				TicketBooking ticketBooking = new TicketBooking();
 				ticketBooking.setScreen_name(screen_name);
 				ticketBooking.setSeatInfo(seatInfoJson);
 				ticketBooking.setAvailable_seats(availableSeatJsonObject.toString());
 
 				ticketBookingDao.insertData(ticketBooking);
-				
+
 				ticketBookingScreenResponse.setStatus(SUCCESS_STATUS);
 				ticketBookingScreenResponse.setStatusCode(SUCCES_CODE);
 			} catch (Exception e) {
@@ -143,7 +146,7 @@ public class TicketBookingController {
 		int seatsLength = seats.size();
 
 		try {
-			
+
 			TicketBooking ticketBooking = ticketBookingDao.getAvailableSeats(screen_name);
 
 			JSONObject jsonObject = new JSONObject(ticketBooking.getAvailable_seats());
@@ -165,15 +168,15 @@ public class TicketBookingController {
 
 				LOGGER.info("Json Array is :" + jsonArray.toString());
 			}
-			
+
 			LOGGER.info("Json Object after reserving the seat is :" + jsonObject.toString());
-			
+
 			ticketBooking.setScreen_name(screen_name);
 			ticketBooking.setAvailable_seats(jsonObject.toString());
-			
+
 			LOGGER.info("screen name for reserve request: " + ticketBooking.getScreen_name());
 			LOGGER.info("avialable sest for reserve request: " + ticketBooking.getAvailable_seats());
-			
+
 			ticketBookingDao.updateAvailableSeats(ticketBooking);
 
 			ticketBookingScreenResponse.setStatus(SUCCESS_STATUS);
@@ -183,6 +186,53 @@ public class TicketBookingController {
 			ticketBookingScreenResponse.setStatusCode(FAILURE_CODE);
 			LOGGER.error(e.getMessage());
 		}
+
+		return ticketBookingScreenResponse;
+	}
+
+	@RequestMapping(value = "{screen_name}/seats", method = RequestMethod.GET)
+	public @ResponseBody TicketBookingScreenResponse seatAvailability(@PathVariable String screen_name,
+			@RequestParam(value = "status") String status) {
+		TicketBookingScreenResponse ticketBookingScreenResponse = new TicketBookingScreenResponse();
+		Response response = new Response();
+		List<SeatResponse> seatList = new ArrayList<SeatResponse>();
+
+		try {
+
+			TicketBooking ticketBooking = ticketBookingDao.getEntriesByScreen(screen_name);
+
+			JSONArray seatInfoArray = new JSONArray(ticketBooking.getSeatInfo());
+			int seatInfoLen = seatInfoArray.length();
+
+			JSONObject jsonObject = new JSONObject(ticketBooking.getAvailable_seats());
+
+			for (int i = 0; i < seatInfoLen; i++) {
+				JSONArray availSeatArray = jsonObject.getJSONArray(seatInfoArray.getString(i));
+				int availSeatLen = availSeatArray.length();
+				List<Integer> unresevedSeat = new ArrayList<Integer>();
+				for (int j = 0; j < availSeatLen; j++) {
+					if (!availSeatArray.getBoolean(j)) {
+						unresevedSeat.add(j);
+					}
+				}
+				SeatResponse seatResponse = new SeatResponse();
+				seatResponse.setRow(seatInfoArray.getString(i));
+				seatResponse.setSeatsInfo(unresevedSeat);
+
+				seatList.add(seatResponse);
+			}
+
+			response.setSeats(seatList);
+
+			ticketBookingScreenResponse.setStatus(SUCCESS_STATUS);
+			ticketBookingScreenResponse.setStatusCode(SUCCES_CODE);
+		} catch (Exception e) {
+			ticketBookingScreenResponse.setStatus(FAILURE_STATUS);
+			ticketBookingScreenResponse.setStatusCode(FAILURE_CODE);
+			LOGGER.error(e.getMessage());
+		}
+
+		ticketBookingScreenResponse.setResponse(response);
 
 		return ticketBookingScreenResponse;
 	}
