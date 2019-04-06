@@ -40,17 +40,17 @@ public class TicketBookingScreenResponse implements Serializable {
 
 	public static class Response {
 
-		private List<SeatResponse> seats = null;
+		private List<AvailableSeatResponse> availableSeats = null;
 
-		public List<SeatResponse> getSeats() {
-			return seats;
+		public List<AvailableSeatResponse> getAvailableSeats() {
+			return availableSeats;
 		}
 
-		public void setSeats(List<SeatResponse> seats) {
-			this.seats = seats;
+		public void setAvailableSeats(List<AvailableSeatResponse> availableSeats) {
+			this.availableSeats = availableSeats;
 		}
 
-		public static class SeatResponse {
+		public static class AvailableSeatResponse {
 
 			private String row;
 			private List<Integer> seatsInfo = null;

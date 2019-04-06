@@ -25,7 +25,7 @@ import com.api.ticketBooking.pojo.ReserveRequest.Request.Seat;
 import com.api.ticketBooking.pojo.TicketBookingScreenRequest;
 import com.api.ticketBooking.pojo.TicketBookingScreenResponse;
 import com.api.ticketBooking.pojo.TicketBookingScreenResponse.Response;
-import com.api.ticketBooking.pojo.TicketBookingScreenResponse.Response.SeatResponse;
+import com.api.ticketBooking.pojo.TicketBookingScreenResponse.Response.AvailableSeatResponse;
 import com.google.gson.Gson;
 
 @Controller
@@ -192,20 +192,34 @@ public class TicketBookingController {
 
 	@RequestMapping(value = "{screen_name}/seats", method = RequestMethod.GET)
 	public @ResponseBody TicketBookingScreenResponse seatAvailability(@PathVariable String screen_name,
-			@RequestParam(value = "status") String status) {
+			@RequestParam(value = "status", required = false) String status,
+			@RequestParam(value = "numSeats", required = false) String numSeats,
+			@RequestParam(value = "choice", required = false) String choice) {
+		TicketBookingScreenResponse ticketBookingScreenResponse = null;
+
+		TicketBooking ticketBooking = ticketBookingDao.getEntriesByScreen(screen_name);
+
+		JSONArray seatInfoArray = new JSONArray(ticketBooking.getSeatInfo());
+		int seatInfoLen = seatInfoArray.length();
+
+		JSONObject jsonObject = new JSONObject(ticketBooking.getAvailable_seats());
+
+		if (status != null) {
+			ticketBookingScreenResponse = seatStatus(seatInfoArray, seatInfoLen, jsonObject);
+		} else if (numSeats != null && choice != null) {
+			ticketBookingScreenResponse = seatStatusAtGivenPosition(numSeats, choice);
+		}
+
+		return ticketBookingScreenResponse;
+	}
+
+	public TicketBookingScreenResponse seatStatus(JSONArray seatInfoArray, int seatInfoLen,
+			JSONObject jsonObject) {
 		TicketBookingScreenResponse ticketBookingScreenResponse = new TicketBookingScreenResponse();
 		Response response = new Response();
-		List<SeatResponse> seatList = new ArrayList<SeatResponse>();
+		List<AvailableSeatResponse> availableSeatList = new ArrayList<AvailableSeatResponse>();
 
 		try {
-
-			TicketBooking ticketBooking = ticketBookingDao.getEntriesByScreen(screen_name);
-
-			JSONArray seatInfoArray = new JSONArray(ticketBooking.getSeatInfo());
-			int seatInfoLen = seatInfoArray.length();
-
-			JSONObject jsonObject = new JSONObject(ticketBooking.getAvailable_seats());
-
 			for (int i = 0; i < seatInfoLen; i++) {
 				JSONArray availSeatArray = jsonObject.getJSONArray(seatInfoArray.getString(i));
 				int availSeatLen = availSeatArray.length();
@@ -215,14 +229,14 @@ public class TicketBookingController {
 						unresevedSeat.add(j);
 					}
 				}
-				SeatResponse seatResponse = new SeatResponse();
-				seatResponse.setRow(seatInfoArray.getString(i));
-				seatResponse.setSeatsInfo(unresevedSeat);
+				AvailableSeatResponse availableSeatResponse = new AvailableSeatResponse();
+				availableSeatResponse.setRow(seatInfoArray.getString(i));
+				availableSeatResponse.setSeatsInfo(unresevedSeat);
 
-				seatList.add(seatResponse);
+				availableSeatList.add(availableSeatResponse);
 			}
 
-			response.setSeats(seatList);
+			response.setAvailableSeats(availableSeatList);
 
 			ticketBookingScreenResponse.setStatus(SUCCESS_STATUS);
 			ticketBookingScreenResponse.setStatusCode(SUCCES_CODE);
@@ -233,6 +247,12 @@ public class TicketBookingController {
 		}
 
 		ticketBookingScreenResponse.setResponse(response);
+
+		return ticketBookingScreenResponse;
+	}
+
+	public TicketBookingScreenResponse seatStatusAtGivenPosition(String numSeats, String choice) {
+		TicketBookingScreenResponse ticketBookingScreenResponse = new TicketBookingScreenResponse();
 
 		return ticketBookingScreenResponse;
 	}
